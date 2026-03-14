@@ -112,17 +112,23 @@ const buildPreviewDocument = (html: string) => {
 
   let content = he.decode(html);
 
-  // Remove ALL script tags from AI output
+  // Remove ALL script blocks
   content = content.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
 
-  // Remove tailwind config blocks
+  // Remove Tailwind config fragments
   content = content.replace(/tailwind\.config\s*=\s*{[\s\S]*?};?/gi, "");
 
-  // Remove inline JS handlers
-  content = content.replace(/on\w+="[^"]*"/g, "");
+  // Remove inline JS events
+  content = content.replace(/\son\w+="[^"]*"/g, "");
 
-  // Remove malformed quotes
-  content = content.replace(/[`]{2,}/g, "`");
+  // Remove stray JS statements
+  content = content.replace(/tailwind\.[^;]+;/g, "");
+
+  // Sanitize HTML safely using DOMPurify
+  content = DOMPurify.sanitize(content, {
+    FORBID_TAGS: ["script"],
+    FORBID_ATTR: ["onclick", "onerror", "onload"]
+  });
 
   return `
 <!DOCTYPE html>
@@ -132,7 +138,6 @@ const buildPreviewDocument = (html: string) => {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Tailwind loaded safely -->
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
